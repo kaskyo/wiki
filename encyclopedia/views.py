@@ -4,6 +4,8 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 import random
+from markdown2 import Markdown
+
 
 class NewPage(forms.Form):
     title = forms.CharField(label="title")
@@ -12,6 +14,9 @@ class NewPage(forms.Form):
 
 class EditPage(forms.Form):
     text = forms.CharField(label="text", widget=forms.Textarea)
+
+class SearchForm(forms.Form):
+    query = forms.CharField(label='search')
     
 from . import util
 
@@ -22,13 +27,31 @@ def index(request):
     })
 
 def page(request, title):
+    markdowner = Markdown()
     return render(request, "encyclopedia/page.html", {
         "title": title,
-        "text": util.get_entry(title)
+        "text": markdowner.convert(util.get_entry(title))
     })
 
-def search(request):
-    return 1
+def search(request, query=None):
+    form = SearchForm(request.POST or None)
+    if query is not None:
+        form.query = query
+    if request.method == "POST" and form.is_valid():
+        query = form.cleaned_data['query']
+        if query in util.list_entries():
+            return redirect('page', query)
+        else:
+            matching = [s for s in util.list_entries() if query in s]
+            return render(request, 'encyclopedia/search.html', {
+                'form': SearchForm(initial={'query': query}),
+                'found': matching
+            })
+    else:
+        return render(request, "encyclopedia/search.html", {
+            'form': SearchForm()
+        })
+
 
 
 def edit(request, title):
