@@ -3,6 +3,7 @@ from django import forms
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
+import random
 
 class NewPage(forms.Form):
     title = forms.CharField(label="title")
@@ -41,7 +42,6 @@ def edit(request, title):
         if form.is_valid():
             text = form.cleaned_data['text']
             util.save_entry(title,text)
-            # return HttpResponseRedirect(reverse('page', title))
             return redirect('page', title)
         else:
             return render(request, "encyclopedia/edit.html", {
@@ -59,3 +59,6 @@ def new(request):
     return render(request, "encyclopedia/new.html", {
         'form': NewPage()
     })
+
+def random_page(request):
+    return redirect('page', random.choice(util.list_entries()))
